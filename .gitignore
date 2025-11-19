@@ -1,0 +1,14 @@
+# Arquivos de entrada e saída do script
+entrada.txt
+saida.txt
+
+# Qualquer arquivo TXT adicional que você não queira versionar
+*.log
+*.backup
+
+# MacOS
+.DS_Store
+
+# Node
+node_modules/
+npm-debug.log

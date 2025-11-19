@@ -1,11 +1,34 @@
 const fs = require('fs');
 const path = require('path');
 
-//caminho do arquivo de entrada (entrada.txt na mesma pasta)
-const inputPath = path.join(__dirname, 'entrada.txt');
-const outputPath = path.join(__dirname, 'saida.txt');
+// node formatar-minis.js <entrada> [colecaoInicial] [saida]
+const [, , inputArg, startCollectionArg, outputArg] = process.argv;
 
-console.log('Lendo arquivo de:', inputPath);
+if (!inputArg) {
+    console.log('Uso:');
+    console.log('  node formatar-minis.js <arquivo-entrada> [numeroColecaoInicial] [arquivo-saida]');
+    console.log('\nExemplos:');
+    console.log('  node formatar-minis.js entrada.txt');
+    console.log('  node formatar-minis.js entrada.txt 6');
+    console.log('  node formatar-minis.js entrada.txt 6 saida-piratas.txt');
+    process.exit(1);
+}
+
+const inputPath = path.resolve(process.cwd(), inputArg);
+const outputPath = path.resolve(process.cwd(), outputArg || 'saida.txt');
+
+//Interpretar o número da coleção inicial
+let startCollectionNumber = null;
+
+if (startCollectionArg !== undefined) {
+    const n = parseInt(startCollectionArg, 10);
+    if (Number.isNaN(n)) {
+        console.error('Número de coleção inicial inválido. Use, por exemplo, "6" para começar em #06.');
+        process.exit(1);
+    }
+    startCollectionNumber = n;
+}
+
 
 let rawText;
 try{
@@ -20,6 +43,10 @@ console.log('Total de linhas', lines.length);
 
 //estado atual da colecao
 let currentCollection = null;
+let currentCollectionNumber = null;
+
+// se não foi passada coleção inicial, já pode processar tudo desde o começo
+let processingEnabled = startCollectionNumber === null;
 
 //Array onde vamos acumular as liunhas prontas
 const outputLines = [];
@@ -42,9 +69,22 @@ for (let i = 0; i < lines.length; i++){
         // Se por algum motivo o nome começar com "- ", remove
         nomeCole = nomeCole.replace(/^\s*-\s*/, '').trim();
 
+        currentCollectionNumber = parseInt(numeroCole, 10);
         currentCollection = nomeCole;
 
-        console.log(`Coleção detectada: #${numeroCole} → ${nomeCole}`);
+        // decide se a partir desta coleção já pode processar
+        if (startCollectionNumber !== null) {
+            processingEnabled = currentCollectionNumber >= startCollectionNumber;
+        } else {
+            processingEnabled = true;
+        }
+
+        if (!processingEnabled) {
+            console.log(`Ignorando coleção "#${numeroCole} - ${nomeCole}" (antes da coleção inicial).`);
+        } else {
+            console.log(`Processando coleção "#${numeroCole} - ${nomeCole}".`);
+        }       
+
         continue; //nao tem miniatura nessa linha, apenas cabeçalho
     }
 
@@ -57,6 +97,12 @@ for (let i = 0; i < lines.length; i++){
     const miniMatch = trimmed.match (/^(\d+)\s*-\s*(.+?)\s*\(([^()]*)\)\s*$/);
 
     if (miniMatch){
+
+        // Se ainda não é pra processar (coleções antes da inicial), só pula
+        if (!processingEnabled) {
+            continue;
+        }
+
         const codigo = miniMatch[1]; // "001"
         let nomeMini = miniMatch[2]; // "Draco Lich" ou "Lizardfolk Sword Champion - 2 Variations"
         const infoParenteses = miniMatch[3]; // "Gargantuan", "Medium"... (não vamos usar)
@@ -102,5 +148,5 @@ try{
     console.log('Arquivo gerado em:', outputPath);
 }catch (err){
     console.error('Erro ao Escrever arquivo de Saida:', err.message);
-    process.exit;
+    process.exit(1);
 }
