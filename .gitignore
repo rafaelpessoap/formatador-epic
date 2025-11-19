@@ -1,14 +1,11 @@
-# Arquivos de entrada e saída do script
-entrada.txt
-saida.txt
+# Ignora tudo por padrão
+*
 
-# Qualquer arquivo TXT adicional que você não queira versionar
-*.log
-*.backup
+# Exceto os arquivos que devem ser versionados:
+!formatar-minis.js
+!entrada.txt
+!saida-teste.txt
+!README.md
 
-# MacOS
+# Ignorar arquivos do macOS
 .DS_Store
-
-# Node
-node_modules/
-npm-debug.log
