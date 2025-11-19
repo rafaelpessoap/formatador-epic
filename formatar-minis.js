@@ -17,7 +17,7 @@ if (!inputArg) {
 const inputPath = path.resolve(process.cwd(), inputArg);
 const outputPath = path.resolve(process.cwd(), outputArg || 'saida.txt');
 
-//Interpretar o número da coleção inicial
+// Interpretar o número da coleção inicial
 let startCollectionNumber = null;
 
 if (startCollectionArg !== undefined) {
@@ -29,11 +29,10 @@ if (startCollectionArg !== undefined) {
     startCollectionNumber = n;
 }
 
-
 let rawText;
-try{
+try {
     rawText = fs.readFileSync(inputPath, 'utf8');
-} catch (err){
+} catch (err) {
     console.error('Erro ao ler o arquivo:', err.message);
     process.exit(1);
 }
@@ -41,112 +40,111 @@ try{
 const lines = rawText.split(/\r?\n/);
 console.log('Total de linhas', lines.length);
 
-//estado atual da colecao
-let currentCollection = null;
-let currentCollectionNumber = null;
+// Estado atual do processamento
+const context = {
+    currentCollection: null,
+    currentCollectionNumber: null,
+    processingEnabled: startCollectionNumber === null,
+    startCollectionNumber: startCollectionNumber
+};
 
-// se não foi passada coleção inicial, já pode processar tudo desde o começo
-let processingEnabled = startCollectionNumber === null;
-
-//Array onde vamos acumular as liunhas prontas
 const outputLines = [];
 
-for (let i = 0; i < lines.length; i++){
-    const line = lines[i];
+/**
+ * Processa uma única linha do arquivo.
+ * Retorna a linha formatada se for uma miniatura válida para saída, ou null caso contrário.
+ * Atualiza o objeto context com o estado da coleção atual.
+ */
+function processLine(line, ctx) {
     const trimmed = line.trim();
 
-    if (trimmed === ''){
-        continue; //pula linha vasia
+    if (trimmed === '') {
+        return null; // Pula linha vazia
     }
 
-    //Detectar cabeçalho de coleção
+    // 1) Detectar cabeçalho de coleção
+    // Exemplo: ____ #06 - The Crypt of Dread (54) ____
     const headerMatch = trimmed.match(/^_+\s*#(\d+)\s*(?:-\s*)?(.+?)\s+\(\d+\)\s*_*$/);
 
-    if (headerMatch){
-        const numeroCole = headerMatch[1]; // "01", "02", etc.
-        let nomeCole = headerMatch[2]; // "The Crypt of Dread", "Twin Mountains", etc.
+    if (headerMatch) {
+        const collectionNumStr = headerMatch[1]; // "01", "02", etc.
+        let collectionName = headerMatch[2]; // "The Crypt of Dread", "Twin Mountains", etc.
 
         // Se por algum motivo o nome começar com "- ", remove
-        nomeCole = nomeCole.replace(/^\s*-\s*/, '').trim();
+        collectionName = collectionName.replace(/^\s*-\s*/, '').trim();
 
-        currentCollectionNumber = parseInt(numeroCole, 10);
-        currentCollection = nomeCole;
+        ctx.currentCollectionNumber = parseInt(collectionNumStr, 10);
+        ctx.currentCollection = collectionName;
 
-        // decide se a partir desta coleção já pode processar
-        if (startCollectionNumber !== null) {
-            processingEnabled = currentCollectionNumber >= startCollectionNumber;
+        // Decide se a partir desta coleção já pode processar
+        if (ctx.startCollectionNumber !== null) {
+            ctx.processingEnabled = ctx.currentCollectionNumber >= ctx.startCollectionNumber;
         } else {
-            processingEnabled = true;
+            ctx.processingEnabled = true;
         }
 
-        if (!processingEnabled) {
-            console.log(`Ignorando coleção "#${numeroCole} - ${nomeCole}" (antes da coleção inicial).`);
+        if (!ctx.processingEnabled) {
+            console.log(`Ignorando coleção "#${collectionNumStr} - ${collectionName}" (antes da coleção inicial).`);
         } else {
-            console.log(`Processando coleção "#${numeroCole} - ${nomeCole}".`);
-        }       
+            console.log(`Processando coleção "#${collectionNumStr} - ${collectionName}".`);
+        }
 
-        continue; //nao tem miniatura nessa linha, apenas cabeçalho
+        return null; // Apenas cabeçalho, sem saída
     }
 
-     // 2) Detectar linhas de miniaturas
-    //
-    // Exemplo:
-    // 001 - Draco Lich (Gargantuan)
-    // 035 - Lizardfolk Sword Champion - 2 Variations (Medium)
+    // 2) Detectar linhas de miniaturas
+    // Exemplo: 001 - Draco Lich (Gargantuan)
+    const miniMatch = trimmed.match(/^(\d+)\s*-\s*(.+?)\s*\(([^()]*)\)\s*$/);
 
-    const miniMatch = trimmed.match (/^(\d+)\s*-\s*(.+?)\s*\(([^()]*)\)\s*$/);
-
-    if (miniMatch){
-
+    if (miniMatch) {
         // Se ainda não é pra processar (coleções antes da inicial), só pula
-        if (!processingEnabled) {
-            continue;
+        if (!ctx.processingEnabled) {
+            return null;
         }
 
-        const codigo = miniMatch[1]; // "001"
-        let nomeMini = miniMatch[2]; // "Draco Lich" ou "Lizardfolk Sword Champion - 2 Variations"
-        const infoParenteses = miniMatch[3]; // "Gargantuan", "Medium"... (não vamos usar)
+        const code = miniMatch[1]; // "001"
+        let miniName = miniMatch[2]; // "Draco Lich"
+        // const parenthesisInfo = miniMatch[3]; // "Gargantuan", "Medium"... (não usado)
 
         // 2.1) Remover coisas do tipo " - 2 Variations" no final do nome
-        //
-        // \s*-\s*      → espaço opcional, hífen, espaço opcional
-        // \d+          → um ou mais dígitos (2, 3, 10...)
-        // \s+Variations? → espaço + "Variation" ou "Variations" (aceita as duas formas)
-
-        nomeMini = nomeMini.replace(/\s*-\s*\d+\s+Variations?$/i, '');
-        nomeMini = nomeMini.trim();
+        miniName = miniName.replace(/\s*-\s*\d+\s+Variations?$/i, '');
+        miniName = miniName.trim();
 
         // 2.2) Montar o código EM-XXX (3 dígitos)
-        const codigoFormatado = 'EM-' + codigo.padStart(3,'0');
+        const formattedCode = 'EM-' + code.padStart(3, '0');
 
         // 2.3) Garantir que temos coleção atual
-        const cole = currentCollection || 'Coleção Desconhecida';
+        const collection = ctx.currentCollection || 'Coleção Desconhecida';
 
         // 2.4) Montar a linha final
-        const finalLine = `${codigoFormatado};${nomeMini} - ${cole} - Epic Miniatures`;
+        const finalLine = `${formattedCode};${miniName} - ${collection} - Epic Miniatures`;
 
-        // Guarda no array de saída
-        outputLines.push(finalLine);
+        // Log Amigável
+        console.log(`Miniatura processada: [${formattedCode}] ${miniName} (${collection})`);
 
-        //Log Amigavel
-        console.log(`Miniatura processada: [${codigoFormatado}] ${nomeMini} (${cole})`);
-
-        continue    
+        return finalLine;
     }
 
-    // Se cair aqui, é uma linha que não é cabeçalho nem miniatura
-    // Você pode ignorar ou logar para inspecionar depois:
-    // console.log("Linha ignorada:", JSON.stringify(trimmed));
+    // Linha ignorada (não é cabeçalho nem miniatura)
+    return null;
+}
+
+// Loop principal
+for (let i = 0; i < lines.length; i++) {
+    const result = processLine(lines[i], context);
+    if (result) {
+        outputLines.push(result);
+    }
 }
 
 // 3) Escrever no arquivo de saída
 const outputText = outputLines.join('\n');
 
-try{
+try {
     fs.writeFileSync(outputPath, outputText, 'utf8');
-    console.log('\nprocessamento Concluido!');
+    console.log('\nProcessamento Concluído!');
     console.log('Arquivo gerado em:', outputPath);
-}catch (err){
-    console.error('Erro ao Escrever arquivo de Saida:', err.message);
+} catch (err) {
+    console.error('Erro ao escrever arquivo de saída:', err.message);
     process.exit(1);
 }
