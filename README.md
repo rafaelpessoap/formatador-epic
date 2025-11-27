@@ -1,9 +1,13 @@
 # Formatador de Miniaturas -- Epic Miniatures
 
 Script em Node.js para ler um arquivo de texto com coleções e miniaturas
-da Epic Miniatures e gerar um arquivo formatado no padrão:
+da Epic Miniatures e gerar um arquivo CSV formatado com as colunas:
 
-    EM-001;Nome da Miniatura - Nome da Coleção - Epic Miniatures
+    SKU;Nome;Tags
+
+Exemplo de linha gerada:
+
+    EM-001;Draco Lich - The Crypt of Dread - Epic Miniatures;The Crypt of Dread
 
 ## Uso
 
@@ -18,18 +22,18 @@ Exemplos:
 ``` bash
 node formatar-minis.js entrada.txt
 node formatar-minis.js entrada.txt 6
-node formatar-minis.js entrada.txt 6 saida-piratas.txt
+node formatar-minis.js entrada.txt 6 saida-piratas.csv
 ```
 
 -   `<entrada>` --- arquivo de origem\
 -   `[colecaoInicial]` --- opcional, número da coleção para começar\
--   `[saida]` --- opcional, nome do arquivo gerado (padrão: `saida.txt`)
+-   `[saida]` --- opcional, nome do arquivo gerado (padrão: `saida.csv`)
 
 ## Estrutura básica
 
     formatar-minis.js
     entrada.txt
-    saida.txt
+    saida.csv
     README.md
     .gitignore
 

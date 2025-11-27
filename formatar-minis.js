@@ -15,7 +15,7 @@ if (!inputArg) {
 }
 
 const inputPath = path.resolve(process.cwd(), inputArg);
-const outputPath = path.resolve(process.cwd(), outputArg || 'saida.txt');
+const outputPath = path.resolve(process.cwd(), outputArg || 'saida.csv');
 
 // Interpretar o número da coleção inicial
 let startCollectionNumber = null;
@@ -52,7 +52,7 @@ const outputLines = [];
 
 /**
  * Processa uma única linha do arquivo.
- * Retorna a linha formatada se for uma miniatura válida para saída, ou null caso contrário.
+ * Retorna um objeto { sku, name, tag } se for uma miniatura válida para saída, ou null caso contrário.
  * Atualiza o objeto context com o estado da coleção atual.
  */
 function processLine(line, ctx) {
@@ -116,13 +116,17 @@ function processLine(line, ctx) {
         // 2.3) Garantir que temos coleção atual
         const collection = ctx.currentCollection || 'Coleção Desconhecida';
 
-        // 2.4) Montar a linha final
-        const finalLine = `${formattedCode};${miniName} - ${collection} - Epic Miniatures`;
+        // 2.4) Montar o nome completo para a coluna Nome
+        const fullName = `${miniName} - ${collection} - Epic Miniatures`;
 
         // Log Amigável
         console.log(`Miniatura processada: [${formattedCode}] ${miniName} (${collection})`);
 
-        return finalLine;
+        return {
+            sku: formattedCode,
+            name: fullName,
+            tag: collection
+        };
     }
 
     // Linha ignorada (não é cabeçalho nem miniatura)
@@ -137,8 +141,21 @@ for (let i = 0; i < lines.length; i++) {
     }
 }
 
-// 3) Escrever no arquivo de saída
-const outputText = outputLines.join('\n');
+// 3) Escrever no arquivo de saída (CSV)
+// Função auxiliar para escapar campos CSV se necessário (embora nossos dados sejam simples)
+function toCsvField(field) {
+    if (typeof field === 'string' && (field.includes(';') || field.includes('"') || field.includes('\n'))) {
+        return `"${field.replace(/"/g, '""')}"`;
+    }
+    return field;
+}
+
+const header = 'SKU;Nome;Tags';
+const csvRows = outputLines.map(item => {
+    return `${toCsvField(item.sku)};${toCsvField(item.name)};${toCsvField(item.tag)}`;
+});
+
+const outputText = [header, ...csvRows].join('\n');
 
 try {
     fs.writeFileSync(outputPath, outputText, 'utf8');
