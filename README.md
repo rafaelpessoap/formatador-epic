@@ -20,9 +20,9 @@ node formatar-minis.js <entrada> [colecaoInicial] [saida]
 Exemplos:
 
 ``` bash
-node formatar-minis.js entrada.txt
-node formatar-minis.js entrada.txt 6
-node formatar-minis.js entrada.txt 6 saida-piratas.csv
+node formatar-minis.js entrada_exemplo.txt
+node formatar-minis.js entrada_exemplo.txt 6
+node formatar-minis.js entrada_exemplo.txt 6 saida-piratas.csv
 ```
 
 -   `<entrada>` --- arquivo de origem\
@@ -32,9 +32,9 @@ node formatar-minis.js entrada.txt 6 saida-piratas.csv
 ## Estrutura básica
 
     formatar-minis.js
-    entrada.txt
+    entrada_exemplo.txt
     saida.csv
     README.md
     .gitignore
 
-Os arquivos de entrada e saída são ignorados pelo Git.
+Os arquivos de entrada e saída são ignorados pelo Git (exceto o exemplo).

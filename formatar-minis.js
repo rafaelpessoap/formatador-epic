@@ -8,9 +8,9 @@ if (!inputArg) {
     console.log('Uso:');
     console.log('  node formatar-minis.js <arquivo-entrada> [numeroColecaoInicial] [arquivo-saida]');
     console.log('\nExemplos:');
-    console.log('  node formatar-minis.js entrada.txt');
-    console.log('  node formatar-minis.js entrada.txt 6');
-    console.log('  node formatar-minis.js entrada.txt 6 saida-piratas.txt');
+    console.log('  node formatar-minis.js entrada_exemplo.txt');
+    console.log('  node formatar-minis.js entrada_exemplo.txt 6');
+    console.log('  node formatar-minis.js entrada_exemplo.txt 6 saida-piratas.txt');
     process.exit(1);
 }
 

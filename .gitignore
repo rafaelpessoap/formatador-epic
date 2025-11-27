@@ -3,9 +3,9 @@
 
 # Exceto os arquivos que devem ser versionados:
 !formatar-minis.js
-!entrada.txt
-!saida-teste.txt
+!entrada_exemplo.txt
 !README.md
+!.gitignore
 
 # Ignorar arquivos do macOS
 .DS_Store
